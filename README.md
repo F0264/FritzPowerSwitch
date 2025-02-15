@@ -3,7 +3,7 @@ A small script to switch the power outlet on a Fritz!Powerline 546 via http requ
 
 ## Configuration
 
-You need to enter some details in the [main.py](./src/fritzpowerswitch/main.py) file:
+You need to enter some details in the [powerline_async.py](./powerline_async.py) file:
 
 - USERNAME: The username for the user interface of the Powerline adapter. By default this is empty.
 - PASSWORD: The password you use to log in the user interface.
