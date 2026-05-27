@@ -7,6 +7,7 @@ import json
 USERNAME = '' # If you don't know the user, try with an empty string
 PASSWORD = '' # The password, with wich you login in the userinterface
 IP_ADDRESS = '' # IP-Adress of your Powerline device
+SENSOR_NAME = "" # the name of a input_boolean helper, that you want to use to reflect the state of the powerline relay
 SWITCH_URL = f"http://{IP_ADDRESS}/net/home_auto_overview.lua"
 STATE_URL = f"http://{IP_ADDRESS}/data.lua"
 
@@ -85,8 +86,11 @@ async def get_smarthome_state(session, sid):
     try:
         res_data = await session.post(STATE_URL, data=data_payload)
         smart_home = json.loads(await res_data.text())['data']['smarthome']
-        state = 'off' if smart_home['led']=='led_gray' else 'on'
-        return state
+        curr_state = 'off' if smart_home['led']=='led_gray' else 'on'
+        # Set State in Homeassistant, if a STATE_NAME is provided
+        if SENSOR_NAME:
+            state.set(SENSOR_NAME, value=curr_state)
+        return curr_state
         
     except Exception as e:
         print(f"Error getting switch state {e}")
