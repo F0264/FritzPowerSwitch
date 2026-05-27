@@ -1,12 +1,14 @@
 import aiohttp
 import xml.etree.ElementTree as ET
 import hashlib
+import json
 
 # Replace these with your Fritz Powerline login details
 USERNAME = '' # If you don't know the user, try with an empty string
 PASSWORD = '' # The password, with wich you login in the userinterface
 IP_ADDRESS = '' # IP-Adress of your Powerline device
 SWITCH_URL = f"http://{IP_ADDRESS}/net/home_auto_overview.lua"
+STATE_URL = f"http://{IP_ADDRESS}/data.lua"
 
 async def get_sid():
     login_url = f'http://{IP_ADDRESS}/login_sid.lua'
@@ -14,7 +16,7 @@ async def get_sid():
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(login_url) as response:
-                response_text = response.text()
+                response_text = await response.text()
         except Exception as e:
             print(f"Error during initial request: {e}")
             raise
@@ -27,7 +29,7 @@ async def get_sid():
 
         try:
             async with session.get(login_url, params={'username': USERNAME, 'response': response_text}) as sid_response:
-                sid_response_text = sid_response.text()
+                sid_response_text = await sid_response.text()
         except Exception as e:
             print(f"Error during SID request: {e}")
             raise
@@ -41,7 +43,7 @@ async def get_sid():
         return sid
 
 async def switch_on(session, sid):
-    print('switching on')
+    # print('switching on')
     switch_on_payload = {
         "sid": sid,
         "device": "1000",
@@ -56,7 +58,7 @@ async def switch_on(session, sid):
         raise
 
 async def switch_off(session, sid):
-    print('switching off')
+    # print('switching off')
     switch_off_payload = {
         "sid": sid,
         "device": "1000",
@@ -70,9 +72,29 @@ async def switch_off(session, sid):
         print(f"Error during switch off: {e}")
         raise
 
+async def get_smarthome_state(session, sid):
+    data_payload = {
+        "xhr": "1",
+        "sid": sid,
+        "lang": "de",
+        "page": "overview",
+        "xhrId": "all",
+        "useajax": "1",
+        "no_sidrenew": "",
+    }
+    try:
+        res_data = await session.post(STATE_URL, data=data_payload)
+        smart_home = json.loads(await res_data.text())['data']['smarthome']
+        state = 'off' if smart_home['led']=='led_gray' else 'on'
+        return state
+        
+    except Exception as e:
+        print(f"Error getting switch state {e}")
+        raise
+
 @service
 async def async_switch_powerline(switchaction):
-    print(f"switchaction: {switchaction}")
+    # print(f"switchaction: {switchaction}")
     if switchaction.lower() in ['on', 'off']:
         try:
             sid = get_sid()
@@ -85,5 +107,7 @@ async def async_switch_powerline(switchaction):
                 await switch_on(session, sid)
             else:
                 await switch_off(session, sid)
+            switch_state = await get_smarthome_state(session, sid)
+
     else:
         raise Exception(f"Wrong argument for switchaction: {switchaction}")
