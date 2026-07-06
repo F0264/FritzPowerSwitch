@@ -1,6 +1,8 @@
 # FritzPowerSwitch
 A small script to switch the power outlet on a Fritz!Powerline 546 via http request. It was developed with homeassistant and pyscipt in mind.
 
+> moved to Codeberg: https://codeberg.org/F0264/FritzPowerSwitch
+
 ## Configuration
 
 You need to enter some details in the [powerline_async.py](./powerline_async.py) file:
